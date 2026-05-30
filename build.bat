@@ -1,1 +1,1 @@
-pyinstaller -w --add-data "icon.ico;." main.py
+pyinstaller -w --add-data "icon.png;." --name="xkcdware" main.py
