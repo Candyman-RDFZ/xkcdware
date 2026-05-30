@@ -1,0 +1,1 @@
+pyinstaller -w --add-data "icon.ico;." main.py
