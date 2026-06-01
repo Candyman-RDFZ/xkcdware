@@ -14,3 +14,5 @@ else:
     ROOTDIR = Path(__file__).parent.parent
 
 ICON = str(ROOTDIR / 'icon.png')
+
+TITLEIMG = str(ROOTDIR / 'xkcd.png')
