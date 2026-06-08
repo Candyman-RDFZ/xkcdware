@@ -13,6 +13,8 @@ if ASEXE:
 else:
     ROOTDIR = Path(__file__).parent.parent
 
-ICON = str(ROOTDIR / 'icon.png')
+ICON = str(ROOTDIR / 'assets/icon.png')
 
-TITLEIMG = str(ROOTDIR / 'xkcd.png')
+TITLEIMG = str(ROOTDIR / 'assets/xkcd.png')
+BROWSERIMG = str(ROOTDIR / 'assets/browser.png')
+BROWSERHIMG = str(ROOTDIR / 'assets/browserh.png')

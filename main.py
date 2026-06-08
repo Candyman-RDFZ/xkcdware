@@ -1,9 +1,16 @@
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import *
+import webbrowser
 
 from core.config import APPID, PLATFORM
-from core.config import ICON, TITLEIMG
+from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG
+
+from core.comic.matcher import match_comic
+from core.comic.data import ComicDataManager
+
+from ui.customfont import XKCDfont
+from ui.custombutton import XKCDbutton
 
 if PLATFORM == 'Windows':
     try:
@@ -17,8 +24,10 @@ class XKCDware(QMainWindow):
 
         self.setWindowTitle('xkcdware') # Window Title
         SCREENSIZE = QApplication.instance().primaryScreen().geometry()
-        self.WIDTH = self.HEIGHT = SCREENSIZE.height() * 8 // 9
+        self.WIDTH = self.HEIGHT = SCREENSIZE.height() * 7 // 8
         self.setGeometry((SCREENSIZE.width() - self.WIDTH) // 2 + SCREENSIZE.x(), (SCREENSIZE.height() - self.HEIGHT) // 2 + SCREENSIZE.y(), self.WIDTH, self.HEIGHT)
+
+        self.comicDataManager = ComicDataManager(self)
 
         self.p = self.palette()
         self.p.setColor(self.backgroundRole(), Qt.white)
@@ -28,12 +37,13 @@ class XKCDware(QMainWindow):
 
         ## Start Title Section
         self.titleImagePixmap = QPixmap(TITLEIMG)
-        self.titleImagePixmap = self.titleImagePixmap.scaledToHeight(self.HEIGHT // 12)
-        self.titleImageLabel = QLabel()
+        self.titleImagePixmap = self.titleImagePixmap.scaledToHeight(self.HEIGHT // 20)
+        self.titleImageLabel = QLabel(self)
         self.titleImageLabel.setPixmap(self.titleImagePixmap)
-        # self.titleImageLabel.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self.titleImageLabel.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.titleImageLabel.mousePressEvent = self.pressTitle
 
-        self.mainLayout.addWidget(self.titleImageLabel, alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self.mainLayout.addWidget(self.titleImageLabel, alignment=Qt.AlignmentFlag.AlignHCenter)
         ## End Title Section
 
         ## Start First Horizontal Separator
@@ -41,13 +51,115 @@ class XKCDware(QMainWindow):
         self.separator1 = QFrame()
         self.separator1.setFrameShape(QFrame.HLine)
 
-        self.mainLayout.addWidget(self.separator1, alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self.mainLayout.addWidget(self.separator1)
+        ## End First Horizontal Separator
+
+        ## Start Navigation Menu
+
+        self.navLayout = QVBoxLayout()
+        self.navLayout.setSpacing(1)
+
+        # Start Jump Area
+        self.jumpLayout = QHBoxLayout()
+
+        # Entry
+        self.jumpEntry = QLineEdit(self, placeholderText='Enter comic id or URL:')
+        self.jumpEntry.setFont(XKCDfont())
+        self.jumpLayout.addWidget(self.jumpEntry)
+
+        # Jump button
+        self.jumpButton = XKCDbutton('Jump', 'Jump to this comic in xkcdware')
+        self.jumpLayout.addWidget(self.jumpButton)
+
+        # Open in browser button
+        self.openBrowserButton = XKCDbutton('', 'Open this comic in the web browser', BROWSERHIMG, BROWSERIMG)
+        self.openBrowserButton.setIcon(QIcon(BROWSERIMG))
+        self.openBrowserButton.clicked.connect(lambda: self.checkComicValidity(br=1))
+        self.jumpLayout.addWidget(self.openBrowserButton)
+
+        self.jumpLayout.setContentsMargins(self.WIDTH // 5, 0, self.WIDTH // 5, 0)
+        self.navLayout.addLayout(self.jumpLayout)
+
+        # End Jump Area
+
+        # Start xkcd Navigation Menu
+
+        self.xkcdLayout = QHBoxLayout()
+
+        # |<
+        self.toLeastButton = XKCDbutton('|<', 'Jump to the first comic')
+        self.xkcdLayout.addWidget(self.toLeastButton)
+
+        # < Prev
+        self.previousButton = XKCDbutton('< Prev', 'Jump to the previous comic')
+        self.xkcdLayout.addWidget(self.previousButton)
+
+        # Random
+        self.randomButton = XKCDbutton('Random', 'Jump to a random comic')
+        self.xkcdLayout.addWidget(self.randomButton)
+
+        # Next >
+        self.nextButton = XKCDbutton('Next >', 'Jump to the next comic')
+        self.xkcdLayout.addWidget(self.nextButton)
+
+        # >|
+        self.toLatestButton = XKCDbutton('>|', 'Jump to the latest comic')
+        self.xkcdLayout.addWidget(self.toLatestButton)
+
+        self.xkcdLayout.setContentsMargins(self.WIDTH // 3, 0, self.WIDTH // 3, 0)
+        self.xkcdLayout.setSpacing(20)
+        self.navLayout.addLayout(self.xkcdLayout)
+
+        # End xkcd Navigation Menu
+
+        # Start Advanced Menu
+
+        self.advancedLayout = QHBoxLayout()
+
+        # Data download
+
+        ## End Navigation Menu
+
+        self.mainLayout.addLayout(self.navLayout)
 
         self.mainLayout.setContentsMargins(0, 0, 0, 0)
-        self.mainLayout.setSpacing(10)
+        self.mainLayout.setSpacing(5)
+        self.mainLayout.addStretch()
+        self.mainLayout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.mainWidget = QWidget()
         self.mainWidget.setLayout(self.mainLayout)
         self.setCentralWidget(self.mainWidget)
+
+    def pressTitle(self, event):
+        if event.button() == Qt.LeftButton:
+            x = event.position().x()
+            if x < self.titleImageLabel.width() // 2:
+                QDesktopServices.openUrl(QUrl('https://xkcd.com'))
+            else:
+                QDesktopServices.openUrl(QUrl('https://github.com/Candyman-RDFZ/xkcdware'))
+
+    def checkComicValidity(self, br):
+        text = self.jumpEntry.text()
+        res = match_comic(text)
+        if res is None:
+            errDialog = QMessageBox.critical(self, 'Error', 'Please enter a valid comic id or URL.')
+            self.jumpEntry.setText('')
+            self.jumpEntry.setFocus()
+            return
+        def getData(reply):
+            nonlocal res
+            if res < 1 or res > reply:
+                errDialog = QMessageBox.critical(self, 'Error', 'Please enter a valid comic id or URL.')
+                self.jumpEntry.setText('')
+                self.jumpEntry.setFocus()
+            elif br:
+                self.openComicInBrowser(res)
+        self.comicDataManager.getLatestComicData(getData, 'num')
+    
+    def openComicInBrowser(self, res):
+        if not res:
+            return
+        QDesktopServices.openUrl(QUrl(f'https://xkcd.com/{res}/'))
 
 app = QApplication()
 app.setWindowIcon(QIcon(ICON))
