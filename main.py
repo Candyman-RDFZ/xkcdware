@@ -4,7 +4,7 @@ from PySide6.QtWidgets import *
 import webbrowser
 
 from core.config import APPID, PLATFORM
-from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG
+from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG, DOWNLOADIMG, DOWNLOADHIMG
 
 from core.comic.matcher import match_comic
 from core.comic.data import ComicDataManager
@@ -37,7 +37,7 @@ class XKCDware(QMainWindow):
 
         ## Start Title Section
         self.titleImagePixmap = QPixmap(TITLEIMG)
-        self.titleImagePixmap = self.titleImagePixmap.scaledToHeight(self.HEIGHT // 20)
+        self.titleImagePixmap = self.titleImagePixmap.scaledToHeight(self.HEIGHT // 15)
         self.titleImageLabel = QLabel(self)
         self.titleImageLabel.setPixmap(self.titleImagePixmap)
         self.titleImageLabel.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -57,7 +57,7 @@ class XKCDware(QMainWindow):
         ## Start Navigation Menu
 
         self.navLayout = QVBoxLayout()
-        self.navLayout.setSpacing(1)
+        self.navLayout.setSpacing(5)
 
         # Start Jump Area
         self.jumpLayout = QHBoxLayout()
@@ -107,7 +107,7 @@ class XKCDware(QMainWindow):
         self.xkcdLayout.addWidget(self.toLatestButton)
 
         self.xkcdLayout.setContentsMargins(self.WIDTH // 3, 0, self.WIDTH // 3, 0)
-        self.xkcdLayout.setSpacing(20)
+        # self.xkcdLayout.setSpacing(20)
         self.navLayout.addLayout(self.xkcdLayout)
 
         # End xkcd Navigation Menu
@@ -117,6 +117,23 @@ class XKCDware(QMainWindow):
         self.advancedLayout = QHBoxLayout()
 
         # Data download
+
+        self.dataDownloadButton = XKCDbutton('Data', 'Download the data of the current comic', DOWNLOADHIMG, DOWNLOADIMG)
+        self.advancedLayout.addWidget(self.dataDownloadButton)
+
+        # Explanation
+
+        self.explanationButton = XKCDbutton('Explanation', 'Open the explanation in explainxkcd')
+        self.advancedLayout.addWidget(self.explanationButton)
+
+        # Image download
+
+        self.imageDownloadButton = XKCDbutton('Image', 'Download the image of the current comic', DOWNLOADHIMG, DOWNLOADIMG)
+        self.advancedLayout.addWidget(self.imageDownloadButton)
+
+        self.advancedLayout.setContentsMargins(self.WIDTH // 3, 0, self.WIDTH // 3, 0)
+        self.advancedLayout.setSpacing(20)
+        self.navLayout.addLayout(self.advancedLayout)
 
         ## End Navigation Menu
 

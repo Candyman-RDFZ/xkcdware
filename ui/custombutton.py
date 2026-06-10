@@ -13,7 +13,7 @@ class XKCDbutton(QPushButton):
             self.normalIcon = QIcon(normalIcon)
             self.hoverIcon = QIcon(hoverIcon)
             self.setIcon(self.normalIcon)
-            self.setIconSize(QSize(19, 19))
+            self.setIconSize(QSize(18, 18))
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setStyleSheet('''
             XKCDbutton {
