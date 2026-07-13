@@ -1,20 +1,28 @@
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PySide6.QtCore import QUrl
-import json
+from PySide6.QtCore import QUrl, QEventLoop
 
 class ComicDataManager:
-    def __init__(self, parent):
-        self.manager = QNetworkAccessManager(parent)
+	def __init__(self, parent):
+		self.manager = QNetworkAccessManager(parent)
 
-    def getLatestComicData(self, callback, key):
-        rep = self.manager.get(QNetworkRequest(QUrl('https://xkcd.com/info.0.json')))
-        rep.finished.connect(lambda: self._getLatestComicData(rep, callback, key))
+	def getComicData(self, url):
+		"""
+		Fetch the contents of the URL specified.
+		
+		Returns:
+			bytes: the responce body.
+			if unsuccessful, returns None
+		"""
+		request = QNetworkRequest(QUrl(url))
+		reply = self.manager.get(request)
+		loop = QEventLoop()
+		reply.finished.connect(loop.quit)
+		loop.exec()
 
-    def _getLatestComicData(self, reply, callback, key):
-        if reply.error() == QNetworkReply.NetworkError.NoError:
-            replyd = reply.readAll()
-            replyStr = bytes(replyd).decode('utf-8')
-            callback(json.loads(replyStr)[key])
-        else:
-            print(reply.error())
-        reply.deleteLater()
+		if reply.error() != QNetworkReply.NoError:
+			reply.deleteLater()
+			return None
+
+		data = bytes(reply.readAll())
+		reply.deleteLater()
+		return data

@@ -1,10 +1,11 @@
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import *
-import webbrowser
+import json
 
 from core.config import APPID, PLATFORM
 from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG, DOWNLOADIMG, DOWNLOADHIMG
+from core.status import Status
 
 from core.comic.matcher import match_comic
 from core.comic.data import ComicDataManager
@@ -74,7 +75,7 @@ class XKCDware(QMainWindow):
 		# Open in browser button
 		self.openBrowserButton = XKCDbutton('', 'Open this comic in the web browser', BROWSERHIMG, BROWSERIMG)
 		self.openBrowserButton.setIcon(QIcon(BROWSERIMG))
-		self.openBrowserButton.clicked.connect(lambda: self.checkComicValidity(br=1))
+		self.openBrowserButton.clicked.connect(lambda: self.openComicInBrowser(self.jumpEntry.text()))
 		self.jumpLayout.addWidget(self.openBrowserButton)
 		self.jumpLayout.setContentsMargins(0, 1, 0, 1)
 
@@ -129,6 +130,7 @@ class XKCDware(QMainWindow):
 		# Explanation
 
 		self.explanationButton = XKCDbutton('Explanation', 'Open the explanation in explainxkcd')
+		self.explanationButton.clicked.connect(lambda: self.openExplanation(self.jumpEntry.text()))
 		self.advancedLayout.addWidget(self.explanationButton)
 
 		# Image download
@@ -162,28 +164,64 @@ class XKCDware(QMainWindow):
 			else:
 				QDesktopServices.openUrl(QUrl('https://github.com/Candyman-RDFZ/xkcdware'))
 
-	def checkComicValidity(self, br):
-		text = self.jumpEntry.text()
+	def checkComicValidity(self, text):
 		res = match_comic(text)
 		if res is None:
-			errDialog = QMessageBox.critical(self, 'Error', 'Please enter a valid comic id or URL.')
-			self.jumpEntry.setText('')
-			self.jumpEntry.setFocus()
-			return
-		def getData(reply):
-			nonlocal res
-			if res < 1 or res > reply:
-				errDialog = QMessageBox.critical(self, 'Error', 'Please enter a valid comic id or URL.')
-				self.jumpEntry.setText('')
-				self.jumpEntry.setFocus()
-			elif br:
-				self.openComicInBrowser(res)
-		self.comicDataManager.getLatestComicData(getData, 'num')
+			dialog = QMessageBox(self)
+			dialog.setWindowTitle('Error')
+			dialog.setText('Please enter a valid comic number or URL.')
+			dialog.setStandardButtons(QMessageBox.Ok)
+			dialog.setIcon(QMessageBox.Critical)
+			dialog.exec()
+			return Status.FAIL
+		latestComicData = self.comicDataManager.getComicData('https://xkcd.com/info.0.json')
+		if latestComicData is None:
+			dialog = QMessageBox(self)
+			dialog.setWindowTitle('Error')
+			dialog.setText('Error while connecting to xkcd.com in order to check comic validity.')
+			dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Cancel)
+			dialog.setIcon(QMessageBox.Critical)
+			choice = dialog.exec()
+			if choice == QMessageBox.Retry:
+				return Status.RETRY
+			else:
+				return Status.FAIL
+		latestComicData = latestComicData.decode('utf-8')
+		latestComicData = json.loads(latestComicData)
+		latestComicIndex = int(latestComicData['num'])
+		if res < 1 or res > latestComicIndex:
+			dialog = QMessageBox(self)
+			dialog.setWindowTitle('Error')
+			dialog.setText('Please enter a valid comic number or URL.')
+			dialog.setStandardButtons(QMessageBox.Ok)
+			dialog.setIcon(QMessageBox.Critical)
+			dialog.exec()
+			return Status.FAIL
+		return str(res)
 	
-	def openComicInBrowser(self, res):
-		if not res:
-			return
-		QDesktopServices.openUrl(QUrl(f'https://xkcd.com/{res}/'))
+	def openComicInBrowser(self, text):
+		while True:
+			res = self.checkComicValidity(text)
+			if res == Status.FAIL:
+				self.jumpEntry.setText('')
+				return
+			elif res == Status.RETRY:
+				continue
+			else:
+				QDesktopServices.openUrl(QUrl('https://xkcd.com/' + res))
+				return
+
+	def openExplanation(self, text):
+		while True:
+			res = self.checkComicValidity(text)
+			if res == Status.FAIL:
+				self.jumpEntry.setText('')
+				return
+			elif res == Status.RETRY:
+				continue
+			else:
+				QDesktopServices.openUrl(QUrl('https://explainxkcd.com/' + res))
+				return
 
 app = QApplication()
 app.setWindowIcon(QIcon(ICON))
