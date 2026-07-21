@@ -5,6 +5,7 @@ import sys
 APPNAME = 'xkcdware'
 APPVERSION = '1.0.0'
 APPID = 'Candyman.xkcdware'
+APPORG = 'Candy_man'
 
 PLATFORM = system()
 ASEXE = getattr(sys, 'frozen', False)

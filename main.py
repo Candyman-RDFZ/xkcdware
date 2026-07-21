@@ -1,9 +1,10 @@
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, QSettings, QStandardPaths
 from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import *
+from pathlib import Path
 import json
 
-from core.config import APPID, PLATFORM
+from core.config import APPID, PLATFORM, APPORG, APPNAME
 from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG, DOWNLOADIMG, DOWNLOADHIMG
 from core.status import Status
 
@@ -29,6 +30,20 @@ class XKCDware(QMainWindow):
 		self.setGeometry((SCREENSIZE.width() - self.WIDTH) // 2 + SCREENSIZE.x(), (SCREENSIZE.height() - self.HEIGHT) // 2 + SCREENSIZE.y(), self.WIDTH, self.HEIGHT)
 
 		self.comicDataManager = ComicDataManager(self)
+		self.currentComicData = ''
+		self.latestComicData = self.comicDataManager.getComicData('https://xkcd.com/info.0.json')
+		
+		while self.latestComicData is None:
+			dialog = QMessageBox(self)
+			dialog.setWindowTitle('Error')
+			dialog.setText('Error while connecting to xkcd.com to retrieve latest comic data.')
+			dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Ok)
+			choice = dialog.exec()
+			if choice == QMessageBox.Retry:
+				self.latestComicData = self.comicDataManager.getComicData('https://xkcd.com/info.0.json')
+			else:
+				sys.exit()
+		self.latestComicData = json.loads(self.latestComicData.decode('utf-8'))
 
 		self.p = self.palette()
 		self.p.setColor(self.backgroundRole(), Qt.white)
@@ -125,6 +140,7 @@ class XKCDware(QMainWindow):
 		# Data download
 
 		self.dataDownloadButton = XKCDbutton('Data', 'Download the data of the current comic', DOWNLOADHIMG, DOWNLOADIMG)
+		self.dataDownloadButton.clicked.connect(lambda: self.dataDownload(self.jumpEntry.text()))
 		self.advancedLayout.addWidget(self.dataDownloadButton)
 
 		# Explanation
@@ -174,21 +190,39 @@ class XKCDware(QMainWindow):
 			dialog.setIcon(QMessageBox.Critical)
 			dialog.exec()
 			return Status.FAIL
-		latestComicData = self.comicDataManager.getComicData('https://xkcd.com/info.0.json')
-		if latestComicData is None:
-			dialog = QMessageBox(self)
-			dialog.setWindowTitle('Error')
-			dialog.setText('Error while connecting to xkcd.com in order to check comic validity.')
-			dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Cancel)
-			dialog.setIcon(QMessageBox.Critical)
-			choice = dialog.exec()
-			if choice == QMessageBox.Retry:
-				return Status.RETRY
-			else:
-				return Status.FAIL
-		latestComicData = latestComicData.decode('utf-8')
-		latestComicData = json.loads(latestComicData)
-		latestComicIndex = int(latestComicData['num'])
+		
+		if self.currentComicData == '':
+			self.currentComicData = self.comicDataManager.getComicData('https://xkcd.com/' + str(res) + '/info.0.json')
+			while self.currentComicData is None:
+				dialog = QMessageBox(self)
+				dialog.setWindowTitle('Error')
+				dialog.setText('Error while connecting to xkcd.com to retrieve current comic data.')
+				dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Ok)
+				choice = dialog.exec()
+				if choice == QMessageBox.Retry:
+					self.currentComicData = self.comicDataManager.getComicData('https://xkcd.com/info.0.json')
+				else:
+				  sys.exit()
+			if isinstance(self.currentComicData, bytes):
+				self.currentComicData = self.currentComicData.decode('utf-8')
+		else:
+			currentComicNum = int(json.loads(self.currentComicData)['num'])
+			if currentComicNum != int(res):
+				self.currentComicData = self.comicDataManager.getComicData('https://xkcd.com/' + str(res) + '/info.0.json')
+				while self.currentComicData is None:
+					dialog = QMessageBox(self)
+					dialog.setWindowTitle('Error')
+					dialog.setText('Error while connecting to xkcd.com to retrieve current comic data.')
+					dialog.setStandardButtons(QMessageBox.Retry | QMessageBox.Ok)
+					choice = dialog.exec()
+					if choice == QMessageBox.Retry:
+						self.currentComicData = self.comicDataManager.getComicData('https://xkcd.com/info.0.json')
+					else:
+						 sys.exit()
+			if isinstance(self.currentComicData, bytes):
+				self.currentComicData = self.currentComicData.decode('utf-8')
+
+		latestComicIndex = int(self.latestComicData['num'])
 		if res < 1 or res > latestComicIndex:
 			dialog = QMessageBox(self)
 			dialog.setWindowTitle('Error')
@@ -223,7 +257,32 @@ class XKCDware(QMainWindow):
 				QDesktopServices.openUrl(QUrl('https://explainxkcd.com/' + res))
 				return
 
+	def dataDownload(self, text):
+		res = ''
+		while True:
+			res = self.checkComicValidity(text)
+			if res == Status.FAIL:
+				self.jumpEntry.setText('')
+				return
+			elif res == Status.RETRY:
+				continue
+			else:
+				break
+		
+		dataText = self.currentComicData
+
+		settings = QSettings()
+		lastDir = settings.value('last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))
+		filename, _ = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' data', lastDir + '/xkcd_' + res + '.json', 'JSON Files (*.json);;Text Files (*.txt)')
+		if filename:
+			settings.setValue('last_save_dir', str(Path(filename).parent))
+			with open(filename, 'w', encoding='utf-8') as file:
+				file.write(dataText + '\n')
+
+
 app = QApplication()
+app.setOrganizationName(APPORG)
+app.setApplicationName(APPNAME)
 app.setWindowIcon(QIcon(ICON))
 
 xkcdware = XKCDware()
