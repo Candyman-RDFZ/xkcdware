@@ -316,7 +316,6 @@ class XKCDware(QMainWindow):
 			ext = ext.upper()
 			if ext == 'JPG': ext = 'JPEG'
 			if ext == 'TIF': ext = 'TIFF'
-			print(ext)
 			settings.setValue('img_last_save_dir', str(Path(filename).parent))
 			tmp.save(filename, format=ext)
 
