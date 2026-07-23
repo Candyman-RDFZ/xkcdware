@@ -307,9 +307,9 @@ class XKCDware(QMainWindow):
 		settings = QSettings()
 		lastDir = settings.value('img_last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation))
 		if not self.useNativeDialog:
-			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + 'image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)', options=QFileDialog.DontUseNativeDialog)
+			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)', options=QFileDialog.DontUseNativeDialog)
 		else:
-			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + 'image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)')
+			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)')
 		if filename:
 			exts = re.findall(r'\*\.([A-Za-z0-9]+)', fmt)
 			ext = exts[1] if len(exts) == 2 else exts[0]
