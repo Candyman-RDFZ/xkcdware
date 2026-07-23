@@ -2,7 +2,9 @@ from PySide6.QtCore import Qt, QUrl, QSettings, QStandardPaths
 from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import *
 from pathlib import Path
-import json
+import json, re
+from PIL import Image
+from io import BytesIO
 
 from core.config import APPID, PLATFORM, APPORG, APPNAME
 from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG, DOWNLOADIMG, DOWNLOADHIMG
@@ -44,6 +46,8 @@ class XKCDware(QMainWindow):
 			else:
 				sys.exit()
 		self.latestComicData = json.loads(self.latestComicData.decode('utf-8'))
+
+		self.useNativeDialog = PLATFORM == 'Windows'
 
 		self.p = self.palette()
 		self.p.setColor(self.backgroundRole(), Qt.white)
@@ -128,7 +132,7 @@ class XKCDware(QMainWindow):
 		self.xkcdLayout.setContentsMargins(0, 1, 0, 1)
 		self.xkcdWidget = QWidget()
 		self.xkcdWidget.setLayout(self.xkcdLayout)
-		self.xkcdWidget.setFixedWidth(self.WIDTH * 1 // 2)
+		self.xkcdWidget.setFixedWidth(self.WIDTH // 2)
 		self.navLayout.addWidget(self.xkcdWidget, alignment=Qt.AlignmentFlag.AlignHCenter)
 
 		# End xkcd Navigation Menu
@@ -152,12 +156,13 @@ class XKCDware(QMainWindow):
 		# Image download
 
 		self.imageDownloadButton = XKCDbutton('Image', 'Download the image of the current comic', DOWNLOADHIMG, DOWNLOADIMG)
+		self.imageDownloadButton.clicked.connect(lambda: self.imageDownload(self.jumpEntry.text()))
 		self.advancedLayout.addWidget(self.imageDownloadButton)
 
 		self.advancedLayout.setContentsMargins(0, 1, 0, 1)
 		self.advancedWidget = QWidget()
 		self.advancedWidget.setLayout(self.advancedLayout)
-		self.advancedWidget.setFixedWidth(self.WIDTH * 2 // 5)
+		self.advancedWidget.setFixedWidth(self.WIDTH // 2)
 		self.navLayout.addWidget(self.advancedWidget, alignment=Qt.AlignmentFlag.AlignHCenter)
 
 		## End Navigation Menu
@@ -204,9 +209,9 @@ class XKCDware(QMainWindow):
 				else:
 				  sys.exit()
 			if isinstance(self.currentComicData, bytes):
-				self.currentComicData = self.currentComicData.decode('utf-8')
+				self.currentComicData = json.loads(self.currentComicData.decode('utf-8'))
 		else:
-			currentComicNum = int(json.loads(self.currentComicData)['num'])
+			currentComicNum = int(self.currentComicData['num'])
 			if currentComicNum != int(res):
 				self.currentComicData = self.comicDataManager.getComicData('https://xkcd.com/' + str(res) + '/info.0.json')
 				while self.currentComicData is None:
@@ -220,7 +225,7 @@ class XKCDware(QMainWindow):
 					else:
 						 sys.exit()
 			if isinstance(self.currentComicData, bytes):
-				self.currentComicData = self.currentComicData.decode('utf-8')
+				self.currentComicData = json.loads(self.currentComicData.decode('utf-8'))
 
 		latestComicIndex = int(self.latestComicData['num'])
 		if res < 1 or res > latestComicIndex:
@@ -269,16 +274,51 @@ class XKCDware(QMainWindow):
 			else:
 				break
 		
-		dataText = self.currentComicData
+		dataText = str(self.currentComicData)
 
 		settings = QSettings()
-		lastDir = settings.value('last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))
-		filename, _ = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' data', lastDir + '/xkcd_' + res + '.json', 'JSON Files (*.json);;Text Files (*.txt)')
+		lastDir = settings.value('data_last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))
+		if not self.useNativeDialog:
+			filename, _ = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' data', lastDir + '/xkcd_' + res + '.json', 'JSON Files (*.json);;Text Files (*.txt)', options=QFileDialog.DontUseNativeDialog)
+		else:
+			filename, _ = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' data', lastDir + '/xkcd_' + res + '.json', 'JSON Files (*.json);;Text Files (*.txt)')
 		if filename:
-			settings.setValue('last_save_dir', str(Path(filename).parent))
+			settings.setValue('data_last_save_dir', str(Path(filename).parent))
 			with open(filename, 'w', encoding='utf-8') as file:
 				file.write(dataText + '\n')
+	
+	def imageDownload(self, text):
+		res = ''
+		while True:
+			res = self.checkComicValidity(text)
+			if res == Status.FAIL:
+				self.jumpEntry.setText('')
+				return
+			elif res == Status.RETRY:
+				continue
+			else:
+				break
 
+		imgURL = self.currentComicData['img']
+		imgData = self.comicDataManager.getComicData(imgURL)
+
+		tmp = Image.open(BytesIO(imgData))
+
+		settings = QSettings()
+		lastDir = settings.value('img_last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation))
+		if not self.useNativeDialog:
+			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + 'image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)', options=QFileDialog.DontUseNativeDialog)
+		else:
+			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + 'image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)')
+		if filename:
+			exts = re.findall(r'\*\.([A-Za-z0-9]+)', fmt)
+			ext = exts[1] if len(exts) == 2 else exts[0]
+			ext = ext.upper()
+			if ext == 'JPG': ext = 'JPEG'
+			if ext == 'TIF': ext = 'TIFF'
+			print(ext)
+			settings.setValue('img_last_save_dir', str(Path(filename).parent))
+			tmp.save(filename, format=ext)
 
 app = QApplication()
 app.setOrganizationName(APPORG)

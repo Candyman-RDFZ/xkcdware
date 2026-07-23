@@ -6,13 +6,6 @@ class ComicDataManager:
 		self.manager = QNetworkAccessManager(parent)
 
 	def getComicData(self, url):
-		"""
-		Fetch the contents of the URL specified.
-		
-		Returns:
-			bytes: the responce body.
-			if unsuccessful, returns None
-		"""
 		request = QNetworkRequest(QUrl(url))
 		reply = self.manager.get(request)
 		loop = QEventLoop()
