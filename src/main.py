@@ -8,10 +8,12 @@ from io import BytesIO
 
 from core.config import APPID, PLATFORM, APPORG, APPNAME
 from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG, DOWNLOADIMG, DOWNLOADHIMG
-from core.status import Status
+from core.enums import Status, Operation
 
 from core.comic.matcher import match_comic
 from core.comic.data import ComicDataManager
+from core.comic.opener import openComicInBrowser, openExplanation
+from core.comic.download import downloadData, downloadImage
 
 from ui.customfont import XKCDfont
 from ui.custombutton import XKCDbutton
@@ -94,7 +96,7 @@ class XKCDware(QMainWindow):
 		# Open in browser button
 		self.openBrowserButton = XKCDbutton('', 'Open this comic in the web browser', BROWSERHIMG, BROWSERIMG)
 		self.openBrowserButton.setIcon(QIcon(BROWSERIMG))
-		self.openBrowserButton.clicked.connect(lambda: self.openComicInBrowser(self.jumpEntry.text()))
+		self.openBrowserButton.clicked.connect(lambda: self.doOperation(Operation.OPEN_IN_BROWSER))
 		self.jumpLayout.addWidget(self.openBrowserButton)
 		self.jumpLayout.setContentsMargins(0, 1, 0, 1)
 
@@ -144,19 +146,19 @@ class XKCDware(QMainWindow):
 		# Data download
 
 		self.dataDownloadButton = XKCDbutton('Data', 'Download the data of the current comic', DOWNLOADHIMG, DOWNLOADIMG)
-		self.dataDownloadButton.clicked.connect(lambda: self.dataDownload(self.jumpEntry.text()))
+		self.dataDownloadButton.clicked.connect(lambda: self.doOperation(Operation.DOWNLOAD_DATA))
 		self.advancedLayout.addWidget(self.dataDownloadButton)
 
 		# Explanation
 
 		self.explanationButton = XKCDbutton('Explanation', 'Open the explanation in explainxkcd')
-		self.explanationButton.clicked.connect(lambda: self.openExplanation(self.jumpEntry.text()))
+		self.explanationButton.clicked.connect(lambda: self.doOperation(Operation.OPEN_EXPLANATION))
 		self.advancedLayout.addWidget(self.explanationButton)
 
 		# Image download
 
 		self.imageDownloadButton = XKCDbutton('Image', 'Download the image of the current comic', DOWNLOADHIMG, DOWNLOADIMG)
-		self.imageDownloadButton.clicked.connect(lambda: self.imageDownload(self.jumpEntry.text()))
+		self.imageDownloadButton.clicked.connect(lambda: self.doOperation(Operation.DOWNLOAD_IMAGE))
 		self.advancedLayout.addWidget(self.imageDownloadButton)
 
 		self.advancedLayout.setContentsMargins(0, 1, 0, 1)
@@ -238,32 +240,8 @@ class XKCDware(QMainWindow):
 			return Status.FAIL
 		return str(res)
 	
-	def openComicInBrowser(self, text):
-		while True:
-			res = self.checkComicValidity(text)
-			if res == Status.FAIL:
-				self.jumpEntry.setText('')
-				return
-			elif res == Status.RETRY:
-				continue
-			else:
-				QDesktopServices.openUrl(QUrl('https://xkcd.com/' + res))
-				return
-
-	def openExplanation(self, text):
-		while True:
-			res = self.checkComicValidity(text)
-			if res == Status.FAIL:
-				self.jumpEntry.setText('')
-				return
-			elif res == Status.RETRY:
-				continue
-			else:
-				QDesktopServices.openUrl(QUrl('https://explainxkcd.com/' + res))
-				return
-
-	def dataDownload(self, text):
-		res = ''
+	def doOperation(self, operation):
+		text = self.jumpEntry.text()
 		while True:
 			res = self.checkComicValidity(text)
 			if res == Status.FAIL:
@@ -273,51 +251,15 @@ class XKCDware(QMainWindow):
 				continue
 			else:
 				break
-		
-		dataText = str(self.currentComicData)
-
-		settings = QSettings()
-		lastDir = settings.value('data_last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation))
-		if not self.useNativeDialog:
-			filename, _ = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' data', lastDir + '/xkcd_' + res + '.json', 'JSON Files (*.json);;Text Files (*.txt)', options=QFileDialog.DontUseNativeDialog)
-		else:
-			filename, _ = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' data', lastDir + '/xkcd_' + res + '.json', 'JSON Files (*.json);;Text Files (*.txt)')
-		if filename:
-			settings.setValue('data_last_save_dir', str(Path(filename).parent))
-			with open(filename, 'w', encoding='utf-8') as file:
-				file.write(dataText + '\n')
-	
-	def imageDownload(self, text):
-		res = ''
-		while True:
-			res = self.checkComicValidity(text)
-			if res == Status.FAIL:
-				self.jumpEntry.setText('')
-				return
-			elif res == Status.RETRY:
-				continue
-			else:
-				break
-
-		imgURL = self.currentComicData['img']
-		imgData = self.comicDataManager.getComicData(imgURL)
-
-		tmp = Image.open(BytesIO(imgData))
-
-		settings = QSettings()
-		lastDir = settings.value('img_last_save_dir', QStandardPaths.writableLocation(QStandardPaths.StandardLocation.PicturesLocation))
-		if not self.useNativeDialog:
-			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)', options=QFileDialog.DontUseNativeDialog)
-		else:
-			filename, fmt = QFileDialog.getSaveFileName(self, 'Save xkcd comic #' + res + ' image', lastDir + '/xkcd_' + res + '.jpeg', 'JPEG Images (*.jpg  *.jpeg);;PNG Images (*.png);;GIF Images (*.gif);;BMP Images (*.bmp);;WebP Images (*.webp);;TIF Images (*.tif  *.tiff)', 'JPEG Images (*.jpg, *.jpeg)')
-		if filename:
-			exts = re.findall(r'\*\.([A-Za-z0-9]+)', fmt)
-			ext = exts[1] if len(exts) == 2 else exts[0]
-			ext = ext.upper()
-			if ext == 'JPG': ext = 'JPEG'
-			if ext == 'TIF': ext = 'TIFF'
-			settings.setValue('img_last_save_dir', str(Path(filename).parent))
-			tmp.save(filename, format=ext)
+		if operation == Operation.OPEN_IN_BROWSER:
+			openComicInBrowser(res)
+		elif operation == Operation.OPEN_EXPLANATION:
+			openExplanation(res)
+		elif operation == Operation.DOWNLOAD_DATA:
+			downloadData(res, self.currentComicData, self.useNativeDialog)
+		elif operation == Operation.DOWNLOAD_IMAGE:
+			imgData = self.comicDataManager.getComicData(self.currentComicData['img'])
+			downloadImage(res, imgData, self.useNativeDialog)
 
 app = QApplication()
 app.setOrganizationName(APPORG)
