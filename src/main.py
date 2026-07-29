@@ -1,10 +1,7 @@
 from PySide6.QtCore import Qt, QUrl, QSettings, QStandardPaths
 from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import *
-from pathlib import Path
-import json, re
-from PIL import Image
-from io import BytesIO
+import json
 
 from core.config import APPID, PLATFORM, APPORG, APPNAME
 from core.config import ICON, TITLEIMG, BROWSERIMG, BROWSERHIMG, DOWNLOADIMG, DOWNLOADHIMG
