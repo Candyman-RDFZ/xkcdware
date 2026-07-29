@@ -1,5 +1,5 @@
-from PySide6.QtCore import Qt, QUrl, QSettings, QStandardPaths
-from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import *
 import json
 
