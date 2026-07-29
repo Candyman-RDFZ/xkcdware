@@ -21,3 +21,17 @@ BROWSERIMG = str(ROOTDIR / 'assets/browser.png')
 BROWSERHIMG = str(ROOTDIR / 'assets/browserh.png')
 DOWNLOADIMG = str(ROOTDIR / 'assets/download.png')
 DOWNLOADHIMG = str(ROOTDIR / 'assets/downloadh.png')
+
+DATA_FORMATS = {
+	'JSON Files (*.json)': '.json',
+	'Text Files (*.txt)': '.txt'
+}
+
+IMG_FORMATS = {
+	'JPEG Images (*.jpeg *.jpg)': 'JPEG',
+	'PNG Images (*.png)': 'PNG',
+	'GIF Images (*.gif)': 'GIF',
+	'BMP Images (*.bmp)': 'BMP',
+	'WebP Images (*.webp)': 'WebP',
+	'TIFF Images (*.tiff *.tif)': 'TIFF'
+}
