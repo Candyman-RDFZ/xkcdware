@@ -65,13 +65,12 @@ class XKCDware(QMainWindow):
 		self.mainLayout.addWidget(self.titleImageLabel, alignment=Qt.AlignmentFlag.AlignHCenter)
 		## End Title Section
 
-		## Start First Horizontal Separator
+		## Start First Separator
 
 		self.separator1 = QFrame()
 		self.separator1.setFrameShape(QFrame.HLine)
-
 		self.mainLayout.addWidget(self.separator1)
-		## End First Horizontal Separator
+		## End First Separator
 
 		## Start Navigation Menu
 
@@ -164,9 +163,28 @@ class XKCDware(QMainWindow):
 		self.advancedWidget.setFixedWidth(self.WIDTH // 2)
 		self.navLayout.addWidget(self.advancedWidget, alignment=Qt.AlignmentFlag.AlignHCenter)
 
-		## End Navigation Menu
-
 		self.mainLayout.addLayout(self.navLayout)
+		## End Navigation Menu
+		
+		## Start Second Separator
+
+		self.separator2 = QFrame()
+		self.separator2.setFrameShape(QFrame.HLine)
+		self.mainLayout.addWidget(self.separator2)
+
+		## Start Comic Area
+
+		self.comicLayout = QVBoxLayout()
+
+		# Comic Title
+
+		self.comicTitle = QLabel()
+		self.comicTitle.setFont(XKCDfont())
+
+		self.comicLayout.addWidget(self.comicTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
+		
+		self.mainLayout.addLayout(self.comicLayout)
+		## End Comic Area 
 
 		self.mainLayout.setContentsMargins(0, 0, 0, 0)
 		self.mainLayout.setSpacing(5)
@@ -175,6 +193,8 @@ class XKCDware(QMainWindow):
 		self.mainWidget = QWidget()
 		self.mainWidget.setLayout(self.mainLayout)
 		self.setCentralWidget(self.mainWidget)
+
+		self.jumpToComic(True)
 
 	def pressTitle(self, event):
 		if event.button() == Qt.LeftButton:
@@ -257,6 +277,10 @@ class XKCDware(QMainWindow):
 		elif operation == Operation.DOWNLOAD_IMAGE:
 			imgData = self.comicDataManager.getComicData(self.currentComicData['img'])
 			downloadImage(res, imgData, self.useNativeDialog)
+	
+	def jumpToComic(self, useLatest, idx=-1):
+		if useLatest:
+			self.comicTitle.setText(self.latestComicData['title'])
 
 app = QApplication()
 app.setOrganizationName(APPORG)
