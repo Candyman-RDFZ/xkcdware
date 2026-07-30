@@ -258,16 +258,17 @@ class XKCDware(QMainWindow):
 		return str(res)
 	
 	def doOperation(self, operation):
-		text = self.jumpEntry.text()
-		while True:
-			res = self.checkComicValidity(text)
-			if res == Status.FAIL:
-				self.jumpEntry.setText('')
-				return
-			elif res == Status.RETRY:
-				continue
-			else:
-				break
+		if operation != Operation.JUMP_LATEST:
+			text = self.jumpEntry.text()
+			while True:
+				res = self.checkComicValidity(text)
+				if res == Status.FAIL:
+					self.jumpEntry.setText('')
+					return
+				elif res == Status.RETRY:
+					continue
+				else:
+					break
 		if operation == Operation.OPEN_IN_BROWSER:
 			openComicInBrowser(res)
 		elif operation == Operation.OPEN_EXPLANATION:
