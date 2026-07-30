@@ -6,6 +6,8 @@ class Status(Enum):
 	FAIL = auto()
 
 class Operation(Enum):
+	JUMP_LATEST = auto()
+	JUMP = auto()
 	OPEN_IN_BROWSER = auto()
 	OPEN_EXPLANATION = auto()
 	DOWNLOAD_DATA = auto()

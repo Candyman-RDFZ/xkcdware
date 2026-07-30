@@ -179,7 +179,7 @@ class XKCDware(QMainWindow):
 		# Comic Title
 
 		self.comicTitle = QLabel()
-		self.comicTitle.setFont(XKCDfont())
+		self.comicTitle.setFont(XKCDfont(20))
 
 		self.comicLayout.addWidget(self.comicTitle, alignment=Qt.AlignmentFlag.AlignHCenter)
 		
@@ -194,7 +194,7 @@ class XKCDware(QMainWindow):
 		self.mainWidget.setLayout(self.mainLayout)
 		self.setCentralWidget(self.mainWidget)
 
-		self.jumpToComic(True)
+		self.doOperation(Operation.JUMP_LATEST)
 
 	def pressTitle(self, event):
 		if event.button() == Qt.LeftButton:
@@ -277,10 +277,17 @@ class XKCDware(QMainWindow):
 		elif operation == Operation.DOWNLOAD_IMAGE:
 			imgData = self.comicDataManager.getComicData(self.currentComicData['img'])
 			downloadImage(res, imgData, self.useNativeDialog)
+		elif operation == Operation.JUMP_LATEST:
+			self.jumpToComic(True)
+		elif operation == Operation.JUMP:
+			self.jumpToComic(False, int(res))
 	
 	def jumpToComic(self, useLatest, idx=-1):
-		if useLatest:
-			self.comicTitle.setText(self.latestComicData['title'])
+		if useLatest or idx == int(self.latestComicData['num']):
+			self.nextButton.setEnabled(False)
+			self.toLatestButton.setEnabled(False)
+			self.comicTitle.setText(str(self.latestComicData['num']) + ': ' + self.latestComicData['title'])
+			self.comicTitle.setToolTip(str(self.latestComicData['year'] + ' - ' + str(self.latestComicData['month'] + ' - ' + self.latestComicData['day'])))
 
 app = QApplication()
 app.setOrganizationName(APPORG)

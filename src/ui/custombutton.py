@@ -28,6 +28,10 @@ class XKCDbutton(QPushButton):
                 background-color: #FFF;
                 color: #6E7B91;
             }
+			XKCDbutton:disabled {
+				background-color: #99ABC9;
+				color: #FFF;
+			}
         ''')
         self.setFont(XKCDfont())
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
