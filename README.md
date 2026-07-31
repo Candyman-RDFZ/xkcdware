@@ -5,8 +5,3 @@
 > - [Licensing Information](https://github.com/Candyman-RDFZ/xkcdware/blob/main/docs/LICENSING_INFORMATION.md)
 > - [Disclaimer](https://github.com/Candyman-RDFZ/xkcdware/blob/main/docs/DISCLAIMER.md)
 
-{% GNU/Linux %}
-
-Some Text...
-
-{% endGNU/Linux %}
