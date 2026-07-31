@@ -61,7 +61,6 @@ class XKCDware(QMainWindow):
 		self.titleImageLabel = XKCDwareTitle(self)
 		self.titleImageLabel.setPixmap(self.titleImagePixmap)
 		self.titleImageLabel.setCursor(Qt.CursorShape.PointingHandCursor)
-#		self.titleImageLabel.mousePressEvent = self.pressTitle
 
 		self.mainLayout.addWidget(self.titleImageLabel, alignment=Qt.AlignmentFlag.AlignHCenter)
 		## End Title Section
@@ -196,16 +195,6 @@ class XKCDware(QMainWindow):
 		self.setCentralWidget(self.mainWidget)
 
 		self.doOperation(Operation.JUMP_LATEST)
-
-#	def pressTitle(self, event):
-#		if event.button() == Qt.LeftButton:
-#			x = event.position().x()
-#			if x < self.titleImageLabel.width() * 175 // 326:
-#				self.titleImageLabel.setToolTip('A webcomic of romance, sarcasm, math, and language.')
-#				QDesktopServices.openUrl(QUrl('https://xkcd.com'))
-#			else:
-#				self.titleImageLabel.setToolTip('A fast and reliable way to view xkcd comics, with many additional features.')
-#				QDesktopServices.openUrl(QUrl('https://github.com/Candyman-RDFZ/xkcdware'))
 
 	def checkComicValidity(self, text):
 		res = match_comic(text)
