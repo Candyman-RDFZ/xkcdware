@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QIcon, QPixmap, QDesktopServices
 from PySide6.QtWidgets import *
 import json
 
@@ -14,6 +14,7 @@ from core.comic.download import downloadData, downloadImage
 
 from ui.customfont import XKCDfont
 from ui.custombutton import XKCDbutton
+from ui.xkcdwaretitle import XKCDwareTitle
 
 if PLATFORM == 'Windows':
 	try:
@@ -57,10 +58,10 @@ class XKCDware(QMainWindow):
 		## Start Title Section
 		self.titleImagePixmap = QPixmap(TITLEIMG)
 		self.titleImagePixmap = self.titleImagePixmap.scaledToHeight(self.HEIGHT // 15)
-		self.titleImageLabel = QLabel(self)
+		self.titleImageLabel = XKCDwareTitle(self)
 		self.titleImageLabel.setPixmap(self.titleImagePixmap)
 		self.titleImageLabel.setCursor(Qt.CursorShape.PointingHandCursor)
-		self.titleImageLabel.mousePressEvent = self.pressTitle
+#		self.titleImageLabel.mousePressEvent = self.pressTitle
 
 		self.mainLayout.addWidget(self.titleImageLabel, alignment=Qt.AlignmentFlag.AlignHCenter)
 		## End Title Section
@@ -196,13 +197,15 @@ class XKCDware(QMainWindow):
 
 		self.doOperation(Operation.JUMP_LATEST)
 
-	def pressTitle(self, event):
-		if event.button() == Qt.LeftButton:
-			x = event.position().x()
-			if x < self.titleImageLabel.width() // 2:
-				QDesktopServices.openUrl(QUrl('https://xkcd.com'))
-			else:
-				QDesktopServices.openUrl(QUrl('https://github.com/Candyman-RDFZ/xkcdware'))
+#	def pressTitle(self, event):
+#		if event.button() == Qt.LeftButton:
+#			x = event.position().x()
+#			if x < self.titleImageLabel.width() * 175 // 326:
+#				self.titleImageLabel.setToolTip('A webcomic of romance, sarcasm, math, and language.')
+#				QDesktopServices.openUrl(QUrl('https://xkcd.com'))
+#			else:
+#				self.titleImageLabel.setToolTip('A fast and reliable way to view xkcd comics, with many additional features.')
+#				QDesktopServices.openUrl(QUrl('https://github.com/Candyman-RDFZ/xkcdware'))
 
 	def checkComicValidity(self, text):
 		res = match_comic(text)
